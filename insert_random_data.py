@@ -4,14 +4,11 @@ import string
 import time
 from progress.bar import Bar
 
-cnx=mysql.connector.connect(database='test')
-cursor=cnx.cursor(buffered=True)
-
 def random_string(int_length):
     str_letters=string.ascii_lowercase
     return(''.join(random.choice(str_letters) for i in range(int_length)))
 
-def insert(): 
+def insert(cursor): 
     str_random_chars=random_string(1024)
     insert_query=("INSERT INTO random VALUES('" + str_random_chars + "')")
 
@@ -24,23 +21,27 @@ def select():
     results=cursor.fetchall()
     print(results)
         
-def get_size():
+def get_size(cursor):
     size_query=("SELECT table_schema ' Database Name' , SUM(data_length+index_length)/1024/1024 ' Database Size (MB)'   FROM information_schema.TABLES GROUP BY table_schema")
     cursor.execute(size_query)
     results=cursor.fetchall()
-    print(results)
+    str_database=results[1][0]
+    dec_database_size=results[1][1]
+    
+    print("Database " + str_database + ": " + str(dec_database_size) + "MB")
 
 
-get_size()
+cnx=mysql.connector.connect(database='test')
+cursor=cnx.cursor(buffered=True)
 
-bar=Bar('INSERTing 10,000 1kb records...', max=100)
+bar=Bar("INSERTing 1kb records...", max=10)
 
 # insert 1000 records in the database
 current_time=int(round(time.time()*1000))
 
-for i in range(100):
+for i in range(10):
     for j in range(100):
-        insert()
+        insert(cursor)
     
     cnx.commit()
     bar.next()
@@ -52,10 +53,8 @@ elapsed_time=new_time-current_time
 
 print("Inserted 1,000 records in " + str(elapsed_time) + "ms.")
 
-get_size()
-
-# select()
-
+get_size(cursor)
+    
 cursor.close()
 cnx.close()
 
